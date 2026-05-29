@@ -22,3 +22,6 @@ node_modules/
 
 # Local
 *.log
+
+# Claude Code (oturum/harness durumu)
+.claude/

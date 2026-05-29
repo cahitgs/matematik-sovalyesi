@@ -13,6 +13,9 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     const W = this.scale.width, H = this.scale.height;
+    // Dokunmatik d-pad yalnızca aktif oynanışta görünsün (menü/soru/end ekranında değil)
+    document.body.classList.add('oyun-sahnesi');
+    document.body.classList.remove('soru-acik');
     this.kullanilmisSorular = new Set();
     this.aktifKarsilasma = null;
     this.bitisTetiklendi = false;
@@ -115,6 +118,7 @@ export class GameScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       if (this.muzik) { this.muzik.stop(); this.muzik = null; }
       this.events.off('soru-cevaplandi');
+      document.body.classList.remove('oyun-sahnesi', 'soru-acik');
     });
   }
 
@@ -237,6 +241,8 @@ export class GameScene extends Phaser.Scene {
   soruyuBaslat(dusman) {
     if (this.aktifKarsilasma) return;
     this.aktifKarsilasma = dusman;
+    // Soru açıkken d-pad'i gizle ki cevap butonlarıyla çakışmasın
+    document.body.classList.add('soru-acik');
     this.sovalye.kontrolKilitli = true;
     this.sovalye.setVelocity(0, 0);
     if (this.muzik) this.muzik.setVolume(0.12);
@@ -256,6 +262,7 @@ export class GameScene extends Phaser.Scene {
     if (typeof soruIdx === 'number') this.kullanilmisSorular.add(soruIdx);
     const dusman = this.aktifKarsilasma;
     this.aktifKarsilasma = null;
+    document.body.classList.remove('soru-acik');
     this.sovalye.kontrolKilitli = false;
     if (this.muzik) this.muzik.setVolume(0.4);
 

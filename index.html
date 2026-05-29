@@ -2,7 +2,8 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -11,7 +12,9 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      width: 100%; height: 100%;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
       background: #1a0e0a;
       overflow: hidden;
       font-family: 'Trebuchet MS', sans-serif;
@@ -19,47 +22,97 @@
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
+      overscroll-behavior: none;
     }
     #game-container {
-      width: 100vw; height: 100vh;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
       display: flex; align-items: center; justify-content: center;
       background: #1a0e0a;
     }
     canvas { display: block; image-rendering: pixelated; }
 
-    /* Touch kontrolleri */
+    /* === Dokunmatik kontroller — yalnızca dokunmatik cihazda + yatay modda === */
     .touch-controls {
       position: fixed;
       bottom: 0; left: 0; right: 0;
       pointer-events: none;
       display: none;
       z-index: 1000;
-      padding: 18px;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 16px;
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
     }
-    .touch-controls.show { display: flex; justify-content: space-between; align-items: flex-end; }
-    .touch-pad { display: flex; gap: 14px; pointer-events: auto; }
+    /* Yalnızca aktif oynanışta göster: menüde/soru ekranında/dikey-telefonda gizli */
+    body.is-touch.oyun-sahnesi:not(.force-rotate):not(.soru-acik) .touch-controls { display: flex; }
+    .touch-pad { display: flex; gap: 16px; pointer-events: none; }
     .touch-btn {
-      width: 72px; height: 72px;
-      background: rgba(255, 220, 130, 0.85);
+      width: 78px; height: 78px;
+      background: rgba(255, 220, 130, 0.88);
       border: 4px solid #6b3a1a;
       border-radius: 50%;
       color: #2a1605;
-      font-size: 30px;
+      font-size: 32px;
       font-weight: 900;
+      line-height: 1;
       box-shadow: 0 4px 0 #6b3a1a, 0 8px 18px rgba(0,0,0,0.45);
       display: flex; align-items: center; justify-content: center;
       pointer-events: auto;
       touch-action: none;
+      transition: transform 0.06s ease, box-shadow 0.06s ease;
     }
+    .touch-btn:focus-visible { outline: 3px solid #ffe9c2; outline-offset: 3px; }
     .touch-btn:active {
       transform: translateY(3px);
       box-shadow: 0 1px 0 #6b3a1a, 0 4px 10px rgba(0,0,0,0.45);
     }
-    .touch-btn.attack { background: rgba(220, 70, 60, 0.92); color: #fff; }
-    .touch-btn.jump  { background: rgba(110, 200, 110, 0.92); color: #fff; }
+    .touch-btn.attack { background: rgba(220, 70, 60, 0.94); color: #fff; }
+    .touch-btn.jump  { background: rgba(110, 200, 110, 0.94); color: #fff; }
 
-    @media (pointer: coarse) {
-      .touch-controls { display: flex; justify-content: space-between; align-items: flex-end; }
+    /* === "Cihazını çevir" uyarısı — yalnızca dokunmatik cihazda + dikey modda === */
+    .rotate-notice {
+      position: fixed; inset: 0; z-index: 2000;
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 22px; text-align: center; padding: 32px;
+      background: radial-gradient(circle at 50% 38%, #3a2010 0%, #160c06 72%);
+      color: #ffe9c2;
+    }
+    body.is-touch.force-rotate .rotate-notice { display: flex; }
+    .rotate-phone {
+      width: 58px; height: 100px;
+      border: 4px solid #ffd84a; border-radius: 13px;
+      background: rgba(255, 216, 74, 0.08);
+      position: relative;
+      box-shadow: 0 0 26px rgba(255, 216, 74, 0.35);
+      transform-origin: 50% 50%;
+      animation: cevirHint 2.6s ease-in-out infinite;
+    }
+    .rotate-phone::before {
+      content: ''; position: absolute; top: 8px; left: 50%;
+      transform: translateX(-50%);
+      width: 20px; height: 3px; border-radius: 2px; background: #ffd84a;
+    }
+    .rotate-phone::after {
+      content: ''; position: absolute; bottom: 7px; left: 50%;
+      transform: translateX(-50%);
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid #ffd84a;
+    }
+    @keyframes cevirHint {
+      0%, 28% { transform: rotate(0deg); }
+      58%, 100% { transform: rotate(-90deg); }
+    }
+    .rotate-notice h2 {
+      font-size: 26px; font-weight: 900; color: #ffd84a;
+      text-shadow: 0 2px 0 #1a0a04; letter-spacing: -0.01em;
+    }
+    .rotate-notice p {
+      font-size: 16px; line-height: 1.6; color: #ffd9a0; max-width: 320px;
     }
   </style>
 </head>
@@ -68,13 +121,19 @@
 
   <div class="touch-controls" id="touch-controls">
     <div class="touch-pad">
-      <button class="touch-btn" id="btn-left">◀</button>
-      <button class="touch-btn" id="btn-right">▶</button>
+      <button class="touch-btn" id="btn-left" aria-label="Sola git">◀</button>
+      <button class="touch-btn" id="btn-right" aria-label="Sağa git">▶</button>
     </div>
     <div class="touch-pad">
-      <button class="touch-btn jump" id="btn-jump">↑</button>
-      <button class="touch-btn attack" id="btn-attack">⚔</button>
+      <button class="touch-btn jump" id="btn-jump" aria-label="Zıpla">↑</button>
+      <button class="touch-btn attack" id="btn-attack" aria-label="Saldır">⚔</button>
     </div>
+  </div>
+
+  <div class="rotate-notice" id="rotate-notice">
+    <div class="rotate-phone"></div>
+    <h2>Cihazını Yatay Çevir</h2>
+    <p>Matematik Şövalyesi yatay (geniş) modda en iyi şekilde oynanır. Telefonunu yana çevir ve maceraya başla!</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>

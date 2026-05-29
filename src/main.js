@@ -53,3 +53,48 @@ bindTouchButton('btn-left', 'left');
 bindTouchButton('btn-right', 'right');
 bindTouchButton('btn-jump', 'jump');
 bindTouchButton('btn-attack', 'attack');
+
+// === Mobil yönlendirme: dikeyde "çevir" uyarısı, yatayda dokunmatik kontroller ===
+// Birincil işaretçi "coarse" olan cihazlar = telefon/tablet. (Dokunmatik laptoplar
+// birincil işaretçiyi fare/trackpad sayar → masaüstü deneyiminde kalır.)
+const dokunmatikMi = window.matchMedia('(pointer: coarse)').matches;
+if (dokunmatikMi) document.body.classList.add('is-touch');
+
+function girisleriSifirla() {
+  if (!window.TOUCH_INPUT) return;
+  window.TOUCH_INPUT.left = false;
+  window.TOUCH_INPUT.right = false;
+  window.TOUCH_INPUT.jump = false;
+  window.TOUCH_INPUT.attack = false;
+}
+
+function yonGuncelle() {
+  const dikey = window.innerHeight > window.innerWidth;
+  // Yatay zorlamayı yalnızca telefon-boyu ekranlarda uygula; tabletler dikeyde de oynayabilir
+  const kucukEkran = Math.min(window.innerWidth, window.innerHeight) < 600;
+  const cevirGerek = dikey && kucukEkran;
+  document.body.classList.toggle('force-rotate', cevirGerek);
+
+  // Çevir uyarısı açıkken: bekleyen dokunma girişlerini temizle (takılı tuş önlemi) + sesi sustur
+  if (cevirGerek) girisleriSifirla();
+  if (window.GAME && window.GAME.sound) window.GAME.sound.mute = cevirGerek;
+
+  // Yön/boyut değişince Phaser canvas'ını yeni ekrana uydur
+  if (window.GAME && window.GAME.scale && window.GAME.scale.refresh) {
+    window.GAME.scale.refresh();
+  }
+}
+yonGuncelle();
+
+// Sekme/uygulama arka plana alınınca da basılı tuşları bırak
+document.addEventListener('visibilitychange', () => { if (document.hidden) girisleriSifirla(); });
+window.addEventListener('blur', girisleriSifirla);
+
+let _yonTimer;
+function ekranDegisti() {
+  // iOS yön değişiminde boyutları geç günceller — kısa gecikme ile yeniden ölç
+  clearTimeout(_yonTimer);
+  _yonTimer = setTimeout(yonGuncelle, 120);
+}
+window.addEventListener('resize', ekranDegisti);
+window.addEventListener('orientationchange', ekranDegisti);
