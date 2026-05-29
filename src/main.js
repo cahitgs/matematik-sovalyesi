@@ -98,3 +98,20 @@ function ekranDegisti() {
 }
 window.addEventListener('resize', ekranDegisti);
 window.addEventListener('orientationchange', ekranDegisti);
+
+// === Mobil ses kilidi: AudioContext yalnızca kullanıcı dokunuşundan sonra başlar ===
+// Phaser'ın kendi kilit açması bazı mobil tarayıcılarda/WebView'lerde güvenilmezdir;
+// her etkileşimde context'i açıkça devam ettiririz (zaten açıksa ucuz no-op).
+function sesKilidiniAc() {
+  const sm = window.GAME && window.GAME.sound;
+  if (!sm) return;
+  if (sm.context && sm.context.state === 'suspended') {
+    sm.context.resume().catch(() => {});
+  }
+  if (sm.locked && sm.unlock) sm.unlock();
+}
+['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'].forEach((ev) =>
+  window.addEventListener(ev, sesKilidiniAc, { passive: true })
+);
+// Sekmeye geri dönünce context yeniden askıya alınmış olabilir → tekrar aç
+document.addEventListener('visibilitychange', () => { if (!document.hidden) sesKilidiniAc(); });
